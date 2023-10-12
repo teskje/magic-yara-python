@@ -33,7 +33,6 @@ import subprocess
 OPTIONS = [
    ('dynamic-linking', None, 'link dynamically against libyara'),
    ('enable-cuckoo', None, 'enable "cuckoo" module'),
-   ('enable-magic', None, 'enable "magic" module'),
    ('enable-dex', None, 'enable "dex" module'),
    ('enable-macho', None, 'enable "macho" module'),
    ('enable-profiling', None, 'enable profiling features')]
@@ -42,7 +41,6 @@ OPTIONS = [
 BOOLEAN_OPTIONS = [
     'dynamic-linking',
     'enable-cuckoo',
-    'enable-magic',
     'enable-dex',
     'enable-macho',
     'enable-profiling']
@@ -115,7 +113,6 @@ class BuildCommand(build):
 
     build.initialize_options(self)
     self.dynamic_linking = None
-    self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_dex = None
     self.enable_macho = None
@@ -136,7 +133,6 @@ class BuildExtCommand(build_ext):
 
     build_ext.initialize_options(self)
     self.dynamic_linking = None
-    self.enable_magic = None
     self.enable_cuckoo = None
     self.enable_dex = None
     self.enable_macho = None
@@ -151,15 +147,11 @@ class BuildExtCommand(build_ext):
 
     self.set_undefined_options('build',
         ('dynamic_linking', 'dynamic_linking'),
-        ('enable_magic', 'enable_magic'),
         ('enable_cuckoo', 'enable_cuckoo'),
         ('enable_dex', 'enable_dex'),
         ('enable_macho', 'enable_macho'),
         ('enable_profiling', 'enable_profiling'))
 
-    if self.enable_magic and self.dynamic_linking:
-      raise distutils.errors.DistutilsOptionError(
-          '--enable-magic can''t be used with --dynamic-linking')
     if self.enable_cuckoo and self.dynamic_linking:
       raise distutils.errors.DistutilsOptionError(
           '--enable-cuckoo can''t be used with --dynamic-linking')
@@ -212,6 +204,7 @@ class BuildExtCommand(build_ext):
     if building_for_linux:
       module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_LINUX_PROC', '1'))
+      module.define_macros.append(('HAVE_STDBOOL_H', '1'))
       module.extra_compile_args.append('-std=c99')
     elif building_for_windows:
       module.define_macros.append(('USE_WINDOWS_PROC', '1'))
@@ -290,15 +283,12 @@ class BuildExtCommand(build_ext):
         module.define_macros.append(('HASH_MODULE', '1'))
         module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
       else:
-        # OpenSSL is not available, exclude hash.c, as it requires some hashing 
+        # OpenSSL is not available, exclude hash.c, as it requires some hashing
         # functions.
         exclusions.append('yara/libyara/modules/hash/hash.c')
 
-      if self.enable_magic:
-        module.define_macros.append(('MAGIC_MODULE', '1'))
-        module.libraries.append('magic')
-      else:
-        exclusions.append('yara/libyara/modules/magic/magic.c')
+      module.define_macros.append(('MAGIC_MODULE', '1'))
+      module.libraries.append('magic')
 
       if self.enable_cuckoo:
         module.define_macros.append(('CUCKOO_MODULE', '1'))
@@ -367,18 +357,16 @@ class UpdateCommand(Command):
     subprocess.check_call(['./configure'], cwd='yara')
 
 
-with open('README.rst', 'r', 'utf-8') as f:
+with open('README.md', 'r', 'utf-8') as f:
   readme = f.read()
 
 setup(
-    name='yara-python',
+    name='magic-yara-python',
     version='4.3.1',
-    description='Python interface for YARA',
+    description='Fork of yara-python that enables more modules by default',
     long_description=readme,
     license='Apache 2.0',
-    author='Victor M. Alvarez',
-    author_email='plusvic@gmail.com, vmalvarez@virustotal.com',
-    url='https://github.com/VirusTotal/yara-python',
+    url='https://github.com/ra-kete/magic-yara-python',
     classifiers=[
         'Programming Language :: Python',
         'License :: OSI Approved :: Apache Software License',
