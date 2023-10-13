@@ -366,7 +366,7 @@ setup(
     description='Fork of yara-python that enables more modules by default',
     long_description=readme,
     license='Apache 2.0',
-    url='https://github.com/ra-kete/magic-yara-python',
+    url='https://github.com/vmray/magic-yara-python',
     classifiers=[
         'Programming Language :: Python',
         'License :: OSI Approved :: Apache Software License',
