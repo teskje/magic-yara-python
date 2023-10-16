@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2007-2013. The YARA Authors. All Rights Reserved.
+# Copyright (c) 2007-2022. The YARA Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,12 +72,13 @@ def muted(*streams):
     devnull.close()
 
 
-def has_function(function_name, include_dirs=None, libraries=None, library_dirs=None):
+def has_function(function_name, includes=None, include_dirs=None, libraries=None, library_dirs=None):
   """Checks if a given functions exists in the current platform."""
   compiler = distutils.ccompiler.new_compiler()
   with muted(sys.stdout, sys.stderr):
       result = compiler.has_function(
           function_name,
+          includes=includes,
           include_dirs=include_dirs,
           libraries=libraries,
           library_dirs=library_dirs)
@@ -184,6 +185,22 @@ class BuildExtCommand(build_ext):
     building_for_freebsd = 'freebsd' in self.plat_name
     building_for_openbsd = 'openbsd' in self.plat_name # need testing
 
+    if building_for_windows:
+      arch = 'x86' if self.plat_name == 'win32' else 'x64'
+      openssl_include_dirs = [
+        os.path.join(base_dir, 'yara\\windows\\vs2015\\packages\\YARA.OpenSSL.{}.1.1.1\\include'.format(arch)),
+        os.path.join(base_dir, 'yara\\windows\\vs2017\\packages\\YARA.OpenSSL.{}.1.1.1\\include'.format(arch))
+      ]
+      openssl_library_dirs = [
+        os.path.join(base_dir, 'yara\\windows\\vs2015\\packages\\YARA.OpenSSL.{}.1.1.1\\lib'.format(arch)),
+        os.path.join(base_dir, 'yara\\windows\\vs2017\\packages\\YARA.OpenSSL.{}.1.1.1\\lib'.format(arch))
+      ]
+      openssl_libraries = ['libcrypto']
+    else:
+      openssl_include_dirs = []
+      openssl_library_dirs = []
+      openssl_libraries = ['crypto']
+
     if building_for_linux:
       module.define_macros.append(('_GNU_SOURCE', '1'))
       module.define_macros.append(('USE_LINUX_PROC', '1'))
@@ -243,17 +260,32 @@ class BuildExtCommand(build_ext):
     if self.dynamic_linking:
       module.libraries.append('yara')
     else:
-      if not self.define or not ('HASH_MODULE', '1') in self.define:
-        if (has_function('MD5_Init', include_dirs=module.include_dirs, libraries=['crypto'], library_dirs=module.library_dirs) and
-            has_function('SHA256_Init', include_dirs=module.include_dirs, libraries=['crypto'], library_dirs=module.library_dirs)):
-          module.define_macros.append(('HASH_MODULE', '1'))
-          module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
-          module.libraries.append('crypto')
-        elif building_for_windows:
-          module.define_macros.append(('HASH_MODULE', '1'))
-          module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
-        else:
-          exclusions.append('yara/libyara/modules/hash/hash.c')
+      # Is OpenSSL available?
+      if (has_function('OpenSSL_add_all_algorithms',
+                       includes=['openssl/evp.h'],
+                       include_dirs=module.include_dirs + openssl_include_dirs,
+                       libraries=module.libraries + openssl_libraries,
+                       library_dirs=module.library_dirs + openssl_library_dirs)
+          # In case OpenSSL is being linked statically
+          or has_function('OpenSSL_add_all_algorithms',
+                       includes=['openssl/evp.h'],
+                       include_dirs=module.include_dirs + openssl_include_dirs,
+                       libraries=module.libraries + openssl_libraries + ['dl', 'pthread', 'z'],
+                       library_dirs=module.library_dirs + openssl_library_dirs)
+          ):
+        module.define_macros.append(('HASH_MODULE', '1'))
+        module.define_macros.append(('HAVE_LIBCRYPTO', '1'))
+        module.libraries.extend(openssl_libraries)
+        module.include_dirs.extend(openssl_include_dirs)
+        module.library_dirs.extend(openssl_library_dirs)
+      elif building_for_windows:
+        # OpenSSL is not available, but in Windows we can rely on Wincrypt.
+        module.define_macros.append(('HASH_MODULE', '1'))
+        module.define_macros.append(('HAVE_WINCRYPT_H', '1'))
+      else:
+        # OpenSSL is not available, exclude hash.c, as it requires some hashing
+        # functions.
+        exclusions.append('yara/libyara/modules/hash/hash.c')
 
       module.define_macros.append(('MAGIC_MODULE', '1'))
       module.libraries.append('magic')
@@ -263,8 +295,6 @@ class BuildExtCommand(build_ext):
         module.libraries.append('jansson')
       else:
         exclusions.append('yara/libyara/modules/cuckoo/cuckoo.c')
-
-      module.define_macros.append(('DOTNET_MODULE', '1'))
 
       if self.enable_dex:
         module.define_macros.append(('DEX_MODULE', '1'))
@@ -279,6 +309,9 @@ class BuildExtCommand(build_ext):
       # exclude pb_tests module
       exclusions.append('yara/libyara/modules/pb_tests/pb_tests.c')
       exclusions.append('yara/libyara/modules/pb_tests/pb_tests.pb-c.c')
+
+      # Always turn on the DOTNET module.
+      module.define_macros.append(('DOTNET_MODULE', '1'))
 
       exclusions = [os.path.normpath(x) for x in exclusions]
 
@@ -329,11 +362,11 @@ with open('README.md', 'r', 'utf-8') as f:
 
 setup(
     name='magic-yara-python',
-    version='4.1.2',
+    version='4.3.1',
     description='Fork of yara-python that enables more modules by default',
     long_description=readme,
     license='Apache 2.0',
-    url='https://github.com/ra-kete/magic-yara-python',
+    url='https://github.com/vmray/magic-yara-python',
     classifiers=[
         'Programming Language :: Python',
         'License :: OSI Approved :: Apache Software License',
@@ -348,4 +381,5 @@ setup(
     ext_modules=[Extension(
         name='yara',
         include_dirs=['yara/libyara/include', 'yara/libyara/', '.'],
+        define_macros=[('BUCKETS_128', 1), ('CHECKSUM_1B', 1)],
         sources=['yara-python.c'])])

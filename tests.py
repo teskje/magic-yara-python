@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2007-2014. The YARA Authors. All Rights Reserved.
+# Copyright (c) 2007-2022. The YARA Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -75,201 +75,201 @@ ab000000000000001a0000000000000000000000000000000100000000000000\
 # The 3 possible outcomes for each pattern
 [SUCCEED, FAIL, SYNTAX_ERROR] = range(3)
 
-
 RE_TESTS = [
 
-  # RE, string, expected result, expected matching
+    # RE, string, expected result, expected matching
 
-  (')', '', SYNTAX_ERROR),
-  ('abc', 'abc', SUCCEED, 'abc'),
-  ('abc', 'xbc', FAIL),
-  ('abc', 'axc', FAIL),
-  ('abc', 'abx', FAIL),
-  ('abc', 'xabcx', SUCCEED, 'abc'),
-  ('abc', 'ababc', SUCCEED, 'abc'),
-  ('a.c', 'abc', SUCCEED, 'abc'),
-  ('a.b', 'a\nb', FAIL),
-  ('a.*b', 'acc\nccb', FAIL),
-  ('a.{4,5}b', 'acc\nccb', FAIL),
-  ('a.b', 'a\rb', SUCCEED, 'a\rb'),
-  ('ab*c', 'abc', SUCCEED, 'abc'),
-  ('ab*c', 'ac', SUCCEED, 'ac'),
-  ('ab*bc', 'abc', SUCCEED, 'abc'),
-  ('ab*bc', 'abbc', SUCCEED, 'abbc'),
-  ('a.*bb', 'abbbb', SUCCEED, 'abbbb'),
-  ('a.*?bbb', 'abbbbbb', SUCCEED, 'abbb'),
-  ('a.*c', 'ac', SUCCEED, 'ac'),
-  ('a.*c', 'axyzc', SUCCEED, 'axyzc'),
-  ('ab+c', 'abbc', SUCCEED, 'abbc'),
-  ('ab+c', 'ac', FAIL),
-  ('ab+', 'abbbb', SUCCEED, 'abbbb'),
-  ('ab+?', 'abbbb', SUCCEED, 'ab'),
-  ('ab+bc', 'abc', FAIL),
-  ('ab+bc', 'abq', FAIL),
-  ('a+b+c', 'aabbabc', SUCCEED, 'abc'),
-  ('ab?bc', 'abbbbc', FAIL),
-  ('ab?c', 'abc', SUCCEED, 'abc'),
-  ('ab*?', 'abbb', SUCCEED, 'a'),
-  ('ab?c', 'abc', SUCCEED, 'abc'),
-  ('ab??', 'ab', SUCCEED, 'a'),
-  ('a(b|x)c', 'abc', SUCCEED, 'abc'),
-  ('a(b|x)c', 'axc', SUCCEED, 'axc'),
-  ('a(b|.)c', 'axc', SUCCEED, 'axc'),
-  ('a(b|x|y)c', 'ayc', SUCCEED, 'ayc'),
-  ('(a+|b)*', 'ab', SUCCEED, 'ab'),
-  ('a|b|c|d|e', 'e', SUCCEED, 'e'),
-  ('(a|b|c|d|e)f', 'ef', SUCCEED, 'ef'),
-  ('.b{2}', 'abb', SUCCEED, 'abb'),
-  ('ab{1}c', 'abc', SUCCEED, 'abc'),
-  ('ab{1,2}c', 'abbc', SUCCEED, 'abbc'),
-  ('ab{1,}c', 'abbbc', SUCCEED, 'abbbc'),
-  ('ab{1,}b', 'ab', FAIL),
-  ('ab{1}c', 'abbc', FAIL),
-  ('ab{0,}c', 'ac', SUCCEED, 'ac'),
-  ('ab{0,}c', 'abbbc', SUCCEED, 'abbbc'),
-  ('ab{,3}c', 'abbbc', SUCCEED, 'abbbc'),
-  ('ab{,2}c', 'abbbc', FAIL),
-  ('ab{4,5}bc', 'abbbbc', FAIL),
-  ('ab{2,3}?', 'abbbbb', SUCCEED, 'abb'),
-  ('ab{.*}', 'ab{c}', SUCCEED, 'ab{c}'),
-  ('.(aa){1,2}', 'aaaaaaaaaa', SUCCEED, 'aaaaa'),
-  ('a.(bc.){2}', 'aabcabca', SUCCEED, 'aabcabca'),
-  ('(ab{1,2}c){1,3}', 'abbcabc', SUCCEED, 'abbcabc'),
-  ('ab(c|cc){1,3}d', 'abccccccd', SUCCEED, 'abccccccd'),
-  ('a[bx]c', 'abc', SUCCEED, 'abc'),
-  ('a[bx]c', 'axc', SUCCEED, 'axc'),
-  ('a[0-9]*b', 'ab', SUCCEED, 'ab'),
-  ('a[0-9]*b', 'a0123456789b', SUCCEED, 'a0123456789b'),
-  ('[0-9a-f]+', '0123456789abcdef', SUCCEED, '0123456789abcdef'),
-  ('[0-9a-f]+', 'xyz0123456789xyz', SUCCEED, '0123456789'),
-  (r'a[\s\S]b', 'a b', SUCCEED, 'a b'),
-  (r'a[\d\D]b', 'a1b', SUCCEED, 'a1b'),
-  ('[x-z]+', 'abc', FAIL),
-  ('a[-]?c', 'ac', SUCCEED, 'ac'),
-  ('a[-b]', 'a-', SUCCEED, 'a-'),
-  ('a[-b]', 'ab', SUCCEED, 'ab'),
-  ('a[b-]', 'a-', SUCCEED, 'a-'),
-  ('a[b-]', 'ab', SUCCEED, 'ab'),
-  ('[a-c-e]', 'b', SUCCEED, 'b'),
-  ('[a-c-e]', '-', SUCCEED, '-'),
-  ('[a-c-e]', 'd', FAIL),
-  ('[b-a]', '', SYNTAX_ERROR),
-  ('(abc', '', SYNTAX_ERROR),
-  ('abc)', '', SYNTAX_ERROR),
-  ('a[]b', '', SYNTAX_ERROR),
-  ('a\\', '', SYNTAX_ERROR),
-  ('a[\\-b]', 'a-', SUCCEED, 'a-'),
-  ('a[\\-b]', 'ab', SUCCEED, 'ab'),
-  ('a[\\', '', SYNTAX_ERROR),
-  ('a]', 'a]', SUCCEED, 'a]'),
-  ('a[]]b', 'a]b', SUCCEED, 'a]b'),
-  (r'a[\]]b', 'a]b', SUCCEED, 'a]b'),
-  ('a[^bc]d', 'aed', SUCCEED, 'aed'),
-  ('a[^bc]d', 'abd', FAIL),
-  ('a[^-b]c', 'adc', SUCCEED, 'adc'),
-  ('a[^-b]c', 'a-c', FAIL),
-  ('a[^]b]c', 'a]c', FAIL),
-  ('a[^]b]c', 'adc', SUCCEED, 'adc'),
-  ('[^ab]*', 'cde', SUCCEED, 'cde'),
-  (')(', '', SYNTAX_ERROR),
-  (r'a\sb', 'a b', SUCCEED, 'a b'),
-  (r'a\sb', 'a\tb', SUCCEED, 'a\tb'),
-  (r'a\sb', 'a\rb', SUCCEED, 'a\rb'),
-  (r'a\sb', 'a\nb', SUCCEED, 'a\nb'),
-  (r'a\sb', 'a\vb', SUCCEED, 'a\vb'),
-  (r'a\sb', 'a\fb', SUCCEED, 'a\fb'),
-  (r'a\Sb', 'a b', FAIL),
-  (r'a\Sb', 'a\tb', FAIL),
-  (r'a\Sb', 'a\rb', FAIL),
-  (r'a\Sb', 'a\nb', FAIL),
-  (r'a\Sb', 'a\vb', FAIL),
-  (r'a\Sb', 'a\fb', FAIL),
-  (r'\n\r\t\f\a', '\n\r\t\f\a', SUCCEED, '\n\r\t\f\a'),
-  (r'[\n][\r][\t][\f][\a]', '\n\r\t\f\a', SUCCEED, '\n\r\t\f\a'),
-  (r'\x00\x01\x02', '\x00\x01\x02', SUCCEED, '\x00\x01\x02'),
-  (r'[\x00-\x02]+', '\x00\x01\x02', SUCCEED, '\x00\x01\x02'),
-  (r'[\x00-\x02]+', '\x03\x04\x05', FAIL),
-  (r'[\x5D]', ']', SUCCEED, ']'),
-  (r'[\0x5A-\x5D]', '\x5B', SUCCEED, '\x5B'),
-  (r'[\x5D-\x5F]', '\x5E', SUCCEED, '\x5E'),
-  (r'[\x5C-\x5F]', '\x5E', SUCCEED, '\x5E'),
-  (r'[\x5D-\x5F]', '\x5E', SUCCEED, '\x5E'),
-  (r'a\wc', 'abc', SUCCEED, 'abc'),
-  (r'a\wc', 'a_c', SUCCEED, 'a_c'),
-  (r'a\wc', 'a0c', SUCCEED, 'a0c'),
-  (r'a\wc', 'a*c', FAIL),
-  (r'\w+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
-  (r'[\w]+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
-  (r'\D+', '1234abc5678', SUCCEED, 'abc'),
-  (r'[\d]+', '0123456789', SUCCEED, '0123456789'),
-  (r'[\D]+', '1234abc5678', SUCCEED, 'abc'),
-  (r'[\da-fA-F]+', '123abc', SUCCEED, '123abc'),
-  ('^(ab|cd)e', 'abcde', FAIL),
-  ('(abc|)ef', 'abcdef', SUCCEED, 'ef'),
-  ('(abc|)ef', 'abcef', SUCCEED, 'abcef'),
-  (r'\babc', 'abc', SUCCEED, 'abc'),
-  (r'abc\b', 'abc', SUCCEED, 'abc'),
-  (r'\babc', '1abc', FAIL),
-  (r'abc\b', 'abc1', FAIL),
-  (r'abc\s\b', 'abc x', SUCCEED, 'abc '),
-  (r'abc\s\b', 'abc  ', FAIL),
-  (r'\babc\b', ' abc ', SUCCEED, 'abc'),
-  (r'\b\w\w\w\b', ' abc ', SUCCEED, 'abc'),
-  (r'\w\w\w\b', 'abcd', SUCCEED, 'bcd'),
-  (r'\b\w\w\w', 'abcd', SUCCEED, 'abc'),
-  (r'\b\w\w\w\b', 'abcd', FAIL),
-  (r'\Babc', 'abc', FAIL),
-  (r'abc\B', 'abc', FAIL),
-  (r'\Babc', '1abc', SUCCEED, 'abc'),
-  (r'abc\B', 'abc1', SUCCEED, 'abc'),
-  (r'abc\s\B', 'abc x', FAIL),
-  (r'abc\s\B', 'abc  ', SUCCEED, 'abc '),
-  (r'\w\w\w\B', 'abcd', SUCCEED, 'abc'),
-  (r'\B\w\w\w', 'abcd', SUCCEED, 'bcd'),
-  (r'\B\w\w\w\B', 'abcd', FAIL),
+    (')', '', SYNTAX_ERROR),
+    ('abc', 'abc', SUCCEED, 'abc'),
+    ('abc', 'xbc', FAIL),
+    ('abc', 'axc', FAIL),
+    ('abc', 'abx', FAIL),
+    ('abc', 'xabcx', SUCCEED, 'abc'),
+    ('abc', 'ababc', SUCCEED, 'abc'),
+    ('a.c', 'abc', SUCCEED, 'abc'),
+    ('a.b', 'a\nb', FAIL),
+    ('a.*b', 'acc\nccb', FAIL),
+    ('a.{4,5}b', 'acc\nccb', FAIL),
+    ('a.b', 'a\rb', SUCCEED, 'a\rb'),
+    ('ab*c', 'abc', SUCCEED, 'abc'),
+    ('ab*c', 'ac', SUCCEED, 'ac'),
+    ('ab*bc', 'abc', SUCCEED, 'abc'),
+    ('ab*bc', 'abbc', SUCCEED, 'abbc'),
+    ('a.*bb', 'abbbb', SUCCEED, 'abbbb'),
+    ('a.*?bbb', 'abbbbbb', SUCCEED, 'abbb'),
+    ('a.*c', 'ac', SUCCEED, 'ac'),
+    ('a.*c', 'axyzc', SUCCEED, 'axyzc'),
+    ('ab+c', 'abbc', SUCCEED, 'abbc'),
+    ('ab+c', 'ac', FAIL),
+    ('ab+', 'abbbb', SUCCEED, 'abbbb'),
+    ('ab+?', 'abbbb', SUCCEED, 'ab'),
+    ('ab+bc', 'abc', FAIL),
+    ('ab+bc', 'abq', FAIL),
+    ('a+b+c', 'aabbabc', SUCCEED, 'abc'),
+    ('ab?bc', 'abbbbc', FAIL),
+    ('ab?c', 'abc', SUCCEED, 'abc'),
+    ('ab*?', 'abbb', SUCCEED, 'a'),
+    ('ab?c', 'abc', SUCCEED, 'abc'),
+    ('ab??', 'ab', SUCCEED, 'a'),
+    ('a(b|x)c', 'abc', SUCCEED, 'abc'),
+    ('a(b|x)c', 'axc', SUCCEED, 'axc'),
+    ('a(b|.)c', 'axc', SUCCEED, 'axc'),
+    ('a(b|x|y)c', 'ayc', SUCCEED, 'ayc'),
+    ('(a+|b)*', 'ab', SUCCEED, 'ab'),
+    ('a|b|c|d|e', 'e', SUCCEED, 'e'),
+    ('(a|b|c|d|e)f', 'ef', SUCCEED, 'ef'),
+    ('.b{2}', 'abb', SUCCEED, 'abb'),
+    ('ab{1}c', 'abc', SUCCEED, 'abc'),
+    ('ab{1,2}c', 'abbc', SUCCEED, 'abbc'),
+    ('ab{1,}c', 'abbbc', SUCCEED, 'abbbc'),
+    ('ab{1,}b', 'ab', FAIL),
+    ('ab{1}c', 'abbc', FAIL),
+    ('ab{0,}c', 'ac', SUCCEED, 'ac'),
+    ('ab{0,}c', 'abbbc', SUCCEED, 'abbbc'),
+    ('ab{,3}c', 'abbbc', SUCCEED, 'abbbc'),
+    ('ab{,2}c', 'abbbc', FAIL),
+    ('ab{4,5}bc', 'abbbbc', FAIL),
+    ('ab{2,3}?', 'abbbbb', SUCCEED, 'abb'),
+    ('ab{.*}', 'ab{c}', SUCCEED, 'ab{c}'),
+    ('.(aa){1,2}', 'aaaaaaaaaa', SUCCEED, 'aaaaa'),
+    ('a.(bc.){2}', 'aabcabca', SUCCEED, 'aabcabca'),
+    ('(ab{1,2}c){1,3}', 'abbcabc', SUCCEED, 'abbcabc'),
+    ('ab(c|cc){1,3}d', 'abccccccd', SUCCEED, 'abccccccd'),
+    ('a[bx]c', 'abc', SUCCEED, 'abc'),
+    ('a[bx]c', 'axc', SUCCEED, 'axc'),
+    ('a[0-9]*b', 'ab', SUCCEED, 'ab'),
+    ('a[0-9]*b', 'a0123456789b', SUCCEED, 'a0123456789b'),
+    ('[0-9a-f]+', '0123456789abcdef', SUCCEED, '0123456789abcdef'),
+    ('[0-9a-f]+', 'xyz0123456789xyz', SUCCEED, '0123456789'),
+    (r'a[\s\S]b', 'a b', SUCCEED, 'a b'),
+    (r'a[\d\D]b', 'a1b', SUCCEED, 'a1b'),
+    ('[x-z]+', 'abc', FAIL),
+    ('a[-]?c', 'ac', SUCCEED, 'ac'),
+    ('a[-b]', 'a-', SUCCEED, 'a-'),
+    ('a[-b]', 'ab', SUCCEED, 'ab'),
+    ('a[b-]', 'a-', SUCCEED, 'a-'),
+    ('a[b-]', 'ab', SUCCEED, 'ab'),
+    ('[a-c-e]', 'b', SUCCEED, 'b'),
+    ('[a-c-e]', '-', SUCCEED, '-'),
+    ('[a-c-e]', 'd', FAIL),
+    ('[b-a]', '', SYNTAX_ERROR),
+    ('(abc', '', SYNTAX_ERROR),
+    ('abc)', '', SYNTAX_ERROR),
+    ('a[]b', '', SYNTAX_ERROR),
+    ('a\\', '', SYNTAX_ERROR),
+    ('a[\\-b]', 'a-', SUCCEED, 'a-'),
+    ('a[\\-b]', 'ab', SUCCEED, 'ab'),
+    ('a[\\', '', SYNTAX_ERROR),
+    ('a]', 'a]', SUCCEED, 'a]'),
+    ('a[]]b', 'a]b', SUCCEED, 'a]b'),
+    (r'a[\]]b', 'a]b', SUCCEED, 'a]b'),
+    ('a[^bc]d', 'aed', SUCCEED, 'aed'),
+    ('a[^bc]d', 'abd', FAIL),
+    ('a[^-b]c', 'adc', SUCCEED, 'adc'),
+    ('a[^-b]c', 'a-c', FAIL),
+    ('a[^]b]c', 'a]c', FAIL),
+    ('a[^]b]c', 'adc', SUCCEED, 'adc'),
+    ('[^ab]*', 'cde', SUCCEED, 'cde'),
+    (')(', '', SYNTAX_ERROR),
+    (r'a\sb', 'a b', SUCCEED, 'a b'),
+    (r'a\sb', 'a\tb', SUCCEED, 'a\tb'),
+    (r'a\sb', 'a\rb', SUCCEED, 'a\rb'),
+    (r'a\sb', 'a\nb', SUCCEED, 'a\nb'),
+    (r'a\sb', 'a\vb', SUCCEED, 'a\vb'),
+    (r'a\sb', 'a\fb', SUCCEED, 'a\fb'),
+    (r'a\Sb', 'a b', FAIL),
+    (r'a\Sb', 'a\tb', FAIL),
+    (r'a\Sb', 'a\rb', FAIL),
+    (r'a\Sb', 'a\nb', FAIL),
+    (r'a\Sb', 'a\vb', FAIL),
+    (r'a\Sb', 'a\fb', FAIL),
+    (r'\n\r\t\f\a', '\n\r\t\f\a', SUCCEED, '\n\r\t\f\a'),
+    (r'[\n][\r][\t][\f][\a]', '\n\r\t\f\a', SUCCEED, '\n\r\t\f\a'),
+    (r'\x00\x01\x02', '\x00\x01\x02', SUCCEED, '\x00\x01\x02'),
+    (r'[\x00-\x02]+', '\x00\x01\x02', SUCCEED, '\x00\x01\x02'),
+    (r'[\x00-\x02]+', '\x03\x04\x05', FAIL),
+    (r'[\x5D]', ']', SUCCEED, ']'),
+    (r'[\0x5A-\x5D]', '\x5B', SUCCEED, '\x5B'),
+    (r'[\x5D-\x5F]', '\x5E', SUCCEED, '\x5E'),
+    (r'[\x5C-\x5F]', '\x5E', SUCCEED, '\x5E'),
+    (r'[\x5D-\x5F]', '\x5E', SUCCEED, '\x5E'),
+    (r'a\wc', 'abc', SUCCEED, 'abc'),
+    (r'a\wc', 'a_c', SUCCEED, 'a_c'),
+    (r'a\wc', 'a0c', SUCCEED, 'a0c'),
+    (r'a\wc', 'a*c', FAIL),
+    (r'\w+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
+    (r'[\w]+', '--ab_cd0123--', SUCCEED, 'ab_cd0123'),
+    (r'\D+', '1234abc5678', SUCCEED, 'abc'),
+    (r'[\d]+', '0123456789', SUCCEED, '0123456789'),
+    (r'[\D]+', '1234abc5678', SUCCEED, 'abc'),
+    (r'[\da-fA-F]+', '123abc', SUCCEED, '123abc'),
+    ('^(ab|cd)e', 'abcde', FAIL),
+    ('(abc|)ef', 'abcdef', SUCCEED, 'ef'),
+    ('(abc|)ef', 'abcef', SUCCEED, 'abcef'),
+    (r'\babc', 'abc', SUCCEED, 'abc'),
+    (r'abc\b', 'abc', SUCCEED, 'abc'),
+    (r'\babc', '1abc', FAIL),
+    (r'abc\b', 'abc1', FAIL),
+    (r'abc\s\b', 'abc x', SUCCEED, 'abc '),
+    (r'abc\s\b', 'abc  ', FAIL),
+    (r'\babc\b', ' abc ', SUCCEED, 'abc'),
+    (r'\b\w\w\w\b', ' abc ', SUCCEED, 'abc'),
+    (r'\w\w\w\b', 'abcd', SUCCEED, 'bcd'),
+    (r'\b\w\w\w', 'abcd', SUCCEED, 'abc'),
+    (r'\b\w\w\w\b', 'abcd', FAIL),
+    (r'\Babc', 'abc', FAIL),
+    (r'abc\B', 'abc', FAIL),
+    (r'\Babc', '1abc', SUCCEED, 'abc'),
+    (r'abc\B', 'abc1', SUCCEED, 'abc'),
+    (r'abc\s\B', 'abc x', FAIL),
+    (r'abc\s\B', 'abc  ', SUCCEED, 'abc '),
+    (r'\w\w\w\B', 'abcd', SUCCEED, 'abc'),
+    (r'\B\w\w\w', 'abcd', SUCCEED, 'bcd'),
+    (r'\B\w\w\w\B', 'abcd', FAIL),
 
-  # This is allowed in most regexp engines but in order to keep the
-  # grammar free of shift/reduce conflicts I've decided not supporting
-  # it. Users can use the (abc|) form instead.
+    # This is allowed in most regexp engines but in order to keep the
+    # grammar free of shift/reduce conflicts I've decided not supporting
+    # it. Users can use the (abc|) form instead.
 
-  ('(|abc)ef', '', SYNTAX_ERROR),
+    ('(|abc)ef', '', SYNTAX_ERROR),
 
-  ('((a)(b)c)(d)', 'abcd', SUCCEED, 'abcd'),
-  ('(a|b)c*d', 'abcd', SUCCEED, 'bcd'),
-  ('(ab|ab*)bc', 'abc', SUCCEED, 'abc'),
-  ('a([bc]*)c*', 'abc', SUCCEED, 'abc'),
-  ('a([bc]*)c*', 'ac', SUCCEED, 'ac'),
-  ('a([bc]*)c*', 'a', SUCCEED, 'a'),
-  ('a([bc]*)(c*d)', 'abcd', SUCCEED, 'abcd'),
-  ('a([bc]+)(c*d)', 'abcd', SUCCEED, 'abcd'),
-  ('a([bc]*)(c+d)', 'abcd', SUCCEED, 'abcd'),
-  ('a[bcd]*dcdcde', 'adcdcde', SUCCEED, 'adcdcde'),
-  ('a[bcd]+dcdcde', 'adcdcde', FAIL),
-  (r'\((.*), (.*)\)', '(a, b)', SUCCEED, '(a, b)'),
-  ('abc|123$', 'abcx', SUCCEED, 'abc'),
-  ('abc|123$', '123x', FAIL),
-  ('abc|^123', '123', SUCCEED, '123'),
-  ('abc|^123', 'x123', FAIL),
-  ('^abc$', 'abc', SUCCEED, 'abc'),
-  ('^abc$', 'abcc', FAIL),
-  ('^abc', 'abcc', SUCCEED, 'abc'),
-  ('^abc$', 'aabc', FAIL),
-  ('abc$', 'aabc', SUCCEED, 'abc'),
-  ('^a(bc+|b[eh])g|.h$', 'abhg', SUCCEED, 'abhg'),
-  ('(bc+d$|ef*g.|h?i(j|k))', 'effgz', SUCCEED, 'effgz'),
-  ('(bc+d$|ef*g.|h?i(j|k))', 'ij', SUCCEED, 'ij'),
-  ('(bc+d$|ef*g.|h?i(j|k))', 'effg', FAIL),
-  ('(bc+d$|ef*g.|h?i(j|k))', 'bcdd', FAIL),
-  ('(bc+d$|ef*g.|h?i(j|k))', 'reffgz', SUCCEED, 'effgz'),
+    ('((a)(b)c)(d)', 'abcd', SUCCEED, 'abcd'),
+    ('(a|b)c*d', 'abcd', SUCCEED, 'bcd'),
+    ('(ab|ab*)bc', 'abc', SUCCEED, 'abc'),
+    ('a([bc]*)c*', 'abc', SUCCEED, 'abc'),
+    ('a([bc]*)c*', 'ac', SUCCEED, 'ac'),
+    ('a([bc]*)c*', 'a', SUCCEED, 'a'),
+    ('a([bc]*)(c*d)', 'abcd', SUCCEED, 'abcd'),
+    ('a([bc]+)(c*d)', 'abcd', SUCCEED, 'abcd'),
+    ('a([bc]*)(c+d)', 'abcd', SUCCEED, 'abcd'),
+    ('a[bcd]*dcdcde', 'adcdcde', SUCCEED, 'adcdcde'),
+    ('a[bcd]+dcdcde', 'adcdcde', FAIL),
+    (r'\((.*), (.*)\)', '(a, b)', SUCCEED, '(a, b)'),
+    ('abc|123$', 'abcx', SUCCEED, 'abc'),
+    ('abc|123$', '123x', FAIL),
+    ('abc|^123', '123', SUCCEED, '123'),
+    ('abc|^123', 'x123', FAIL),
+    ('^abc$', 'abc', SUCCEED, 'abc'),
+    ('^abc$', 'abcc', FAIL),
+    ('^abc', 'abcc', SUCCEED, 'abc'),
+    ('^abc$', 'aabc', FAIL),
+    ('abc$', 'aabc', SUCCEED, 'abc'),
+    ('^a(bc+|b[eh])g|.h$', 'abhg', SUCCEED, 'abhg'),
+    ('(bc+d$|ef*g.|h?i(j|k))', 'effgz', SUCCEED, 'effgz'),
+    ('(bc+d$|ef*g.|h?i(j|k))', 'ij', SUCCEED, 'ij'),
+    ('(bc+d$|ef*g.|h?i(j|k))', 'effg', FAIL),
+    ('(bc+d$|ef*g.|h?i(j|k))', 'bcdd', FAIL),
+    ('(bc+d$|ef*g.|h?i(j|k))', 'reffgz', SUCCEED, 'effgz'),
 
-  # Test case for issue #324
-  ('whatever|   x.   x', '   xy   x', SUCCEED, '   xy   x'),
+    # Test case for issue #324
+    ('whatever|   x.   x', '   xy   x', SUCCEED, '   xy   x'),
 ]
 
 
 def warnings_callback(warning_type, message):
-    global warnings_callback_called
+    global warnings_callback_called, warnings_callback_message
     warnings_callback_called = warning_type
+    warnings_callback_message = message
 
 
 class TestYara(unittest.TestCase):
@@ -277,19 +277,19 @@ class TestYara(unittest.TestCase):
     def assertTrueRules(self, rules, data='dummy'):
 
         for r in rules:
-          r = yara.compile(source=r)
-          self.assertTrue(r.match(data=data))
+            r = yara.compile(source=r)
+            self.assertTrue(r.match(data=data))
 
     def assertFalseRules(self, rules, data='dummy'):
 
         for r in rules:
-          r = yara.compile(source=r)
-          self.assertFalse(r.match(data=data))
+            r = yara.compile(source=r)
+            self.assertFalse(r.match(data=data))
 
     def assertSyntaxError(self, rules):
 
         for r in rules:
-          self.assertRaises(yara.SyntaxError, yara.compile, source=r)
+            self.assertRaises(yara.SyntaxError, yara.compile, source=r)
 
     def runReTest(self, test):
 
@@ -300,19 +300,20 @@ class TestYara(unittest.TestCase):
         source = 'rule test { strings: $a = /%s/ condition: $a }' % regexp
 
         if expected_result == SYNTAX_ERROR:
-          self.assertRaises(yara.SyntaxError, yara.compile, source=source)
+            self.assertRaises(yara.SyntaxError, yara.compile, source=source)
         else:
-          rule = yara.compile(source=source)
-          matches = rule.match(data=string)
-          if expected_result == SUCCEED:
-            self.assertTrue(matches)
-            _, _, matching_string = matches[0].strings[0]
-            if sys.version_info[0] >= 3:
-              self.assertTrue(matching_string == bytes(test[3], 'utf-8'))
+            rule = yara.compile(source=source)
+            matches = rule.match(data=string)
+            if expected_result == SUCCEED:
+                self.assertTrue(matches)
+                matching_string = matches[0].strings[0]
+                instance = matching_string.instances[0]
+                if sys.version_info[0] >= 3:
+                    self.assertTrue(instance.matched_data == bytes(test[3], 'utf-8'))
+                else:
+                    self.assertTrue(instance.matched_data == test[3])
             else:
-              self.assertTrue(matching_string == test[3])
-          else:
-            self.assertFalse(matches)
+                self.assertFalse(matches)
 
     def testBooleanOperators(self):
 
@@ -392,7 +393,7 @@ class TestYara(unittest.TestCase):
             'rule test { condition: 8 >> 2 == 2 }',
             'rule test { condition: 1 << 3 == 8 }',
             'rule test { condition: 1 | 3 ^ 3 == 1 | (3 ^ 3) }'
-            ])
+        ])
 
         self.assertFalseRules([
             'rule test { condition: ~0xAA ^ 0x5A & 0xFF == 0x0F }',
@@ -527,41 +528,45 @@ class TestYara(unittest.TestCase):
         ], PE32_FILE)
 
         self.assertTrueRules([
-          'rule test { strings: $a = { 31 32 [-] 38 39 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [-] 33 34 [-] 38 39 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [1] 34 35 [2] 38 39 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [1-] 34 35 [1-] 38 39 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [0-3] 34 35 [1-] 38 39 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [0-2] 35 [1-] 37 38 39 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [-] 38 39 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [-] 33 34 [-] 38 39 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [1] 34 35 [2] 38 39 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [1-] 34 35 [1-] 38 39 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [0-3] 34 35 [1-] 38 39 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [0-2] 35 [1-] 37 38 39 } condition: $a }',
         ], '123456789')
 
         self.assertTrueRules([
-          'rule test { strings: $a = { 31 32 [-] 38 39 } condition: all of them }',
+            'rule test { strings: $a = { 31 32 [-] 38 39 } condition: all of them }',
         ], '123456789')
 
         self.assertFalseRules([
-          'rule test { strings: $a = { 31 32 [-] 32 33 } condition: $a }',
-          'rule test { strings: $a = { 35 36 [-] 31 32 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [2-] 34 35 } condition: $a }',
-          'rule test { strings: $a = { 31 32 [0-3] 37 38 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [-] 32 33 } condition: $a }',
+            'rule test { strings: $a = { 35 36 [-] 31 32 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [2-] 34 35 } condition: $a }',
+            'rule test { strings: $a = { 31 32 [0-3] 37 38 } condition: $a }',
         ], '123456789')
 
         self.assertSyntaxError([
-          'rule test { strings: $a = { 01 [0] 02 } condition: $a }',
-          'rule test { strings: $a = { [-] 01 02 } condition: $a }',
-          'rule test { strings: $a = { 01 02 [-] } condition: $a }',
-          'rule test { strings: $a = { 01 02 ([-] 03 | 04) } condition: $a }',
-          'rule test { strings: $a = { 01 02 (03 [-] | 04) } condition: $a }',
-          'rule test { strings: $a = { 01 02 (03 | 04 [-]) } condition: $a }'
+            'rule test { strings: $a = { 01 [0] 02 } condition: $a }',
+            'rule test { strings: $a = { [-] 01 02 } condition: $a }',
+            'rule test { strings: $a = { 01 02 [-] } condition: $a }',
+            'rule test { strings: $a = { 01 02 ([-] 03 | 04) } condition: $a }',
+            'rule test { strings: $a = { 01 02 (03 [-] | 04) } condition: $a }',
+            'rule test { strings: $a = { 01 02 (03 | 04 [-]) } condition: $a }'
         ])
 
         rules = yara.compile(source='rule test { strings: $a = { 61 [0-3] (62|63) } condition: $a }')
         matches = rules.match(data='abbb')
 
         if sys.version_info[0] >= 3:
-          self.assertTrue(matches[0].strings == [(0, '$a', bytes('ab', 'utf-8'))])
+            self.assertTrue(matches[0].strings[0].identifier == '$a')
+            self.assertTrue(matches[0].strings[0].instances[0].offset == 0)
+            self.assertTrue(matches[0].strings[0].instances[0].matched_data == bytes('ab', 'utf-8'))
         else:
-          self.assertTrue(matches[0].strings == [(0, '$a', 'ab')])
+            self.assertTrue(matches[0].strings[0].identifier == '$a')
+            self.assertTrue(matches[0].strings[0].instances[0].offset == 0)
+            self.assertTrue(matches[0].strings[0].instances[0].matched_data == 'ab')
 
     def testCount(self):
 
@@ -650,6 +655,58 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = "ssi" condition: for all i in (1..#a) : (@a[i] == 5) }',
         ], 'mississipi')
 
+    def testXorKey(self):
+
+        global rule_data
+        rule_data = None
+
+        def callback(data):
+            global rule_data
+            rule_data = data
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='rule test { strings: $a = "dummy" xor(1-2) condition: $a }')
+        r.match(data='etllxfwoo{', callback=callback)
+
+        self.assertTrue(rule_data['matches'])
+        self.assertEqual(rule_data['rule'], 'test')
+        self.assertEqual(len(rule_data['strings']), 1)
+        string = rule_data['strings'][0]
+        self.assertEqual(len(string.instances), 2)
+        self.assertEqual(string.instances[0].xor_key, 1)
+        self.assertEqual(string.instances[1].xor_key, 2)
+
+        # Make sure plaintext() works.
+        self.assertTrue(string.instances[0].plaintext() == b'dummy')
+
+    # Test that the xor_key for matched strings is 0 if the string is not an xor
+    # string. We always want to make sure this is set!
+    def testXorKeyNoXorString(self):
+
+        global rule_data
+        rule_data = None
+
+        def callback(data):
+            global rule_data
+            rule_data = data
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='rule test { strings: $a = "dummy" condition: $a }')
+        r.match(data='dummy', callback=callback)
+
+        self.assertTrue(rule_data['matches'])
+        self.assertEqual(rule_data['rule'],'test')
+        self.assertEqual(len(rule_data['strings']), 1)
+        self.assertEqual(rule_data['strings'][0].instances[0].xor_key, 0)
+
+    def testMatchedLength(self):
+        yara.set_config(max_match_data=2)
+        r = yara.compile(source='rule test { strings: $a = "dummy" condition: $a }')
+        matches  = r.match(data='dummy')
+        self.assertEqual(matches[0].strings[0].instances[0].matched_length, 5)
+        self.assertEqual(matches[0].strings[0].instances[0].matched_data, b'du')
+        yara.set_config(max_match_data=512)
+
     def testRE(self):
 
         self.assertTrueRules([
@@ -661,8 +718,8 @@ class TestYara(unittest.TestCase):
             'rule test { strings: $a = /(M|N)iss/ nocase condition: $a }',
             'rule test { strings: $a = /[M-N]iss/ nocase condition: $a }',
             'rule test { strings: $a = /(Mi|ssi)ssippi/ nocase condition: $a }',
-            'rule test { strings: $a = /ppi\tmi/ condition: $a }',
-            r'rule test { strings: $a = /ppi\.mi/ condition: $a }',
+            r'rule test { strings: $a = /ppi\tmi/ condition: $a }',
+            'rule test { strings: $a = /ppi\.mi/ condition: $a }',
             'rule test { strings: $a = /^mississippi/ fullword condition: $a }',
             'rule test { strings: $a = /mississippi.*mississippi$/s condition: $a }',
         ], 'mississippi\tmississippi.mississippi\nmississippi')
@@ -699,7 +756,7 @@ class TestYara(unittest.TestCase):
             'rule test { condition: entrypoint >= 0 }',
         ])
 
-     # This test ensures that anything after the NULL character is stripped.
+    # This test ensures that anything after the NULL character is stripped.
     def testMetaNull(self):
 
         r = yara.compile(source=r'rule test { meta: a = "foo\x00bar\x80" condition: true }')
@@ -752,11 +809,37 @@ class TestYara(unittest.TestCase):
         self.assertTrue(meta['b'] == 'ñ')
         self.assertTrue(meta['c'] == 'ñ')
 
+    # This test is similar to testScanMeta but it tests for displaying multiple values in the meta data generated
+    # when a Match object is created (upon request).
+    def testDuplicateMeta(self):
+        r = yara.compile(source="""
+        rule test {
+            meta:
+                a = 1
+                a = 2
+                b = 3
+            condition:
+                true
+        }
+        """)
+
+        # Default behaviour should produce a simple KV map and should use the 'latest' metadata value per field
+        meta = r.match(data="dummy")[0].meta
+        self.assertTrue(meta['a'] == 2 and meta['b'] == 3)
+
+        # `allow_duplicate_metadata` flag should reveal all metadata values per field as a list
+        meta = r.match(data="dummy", allow_duplicate_metadata=True)[0].meta
+        self.assertTrue(meta['a'] == [1, 2] and meta['b'] == [3])
+
     def testFilesize(self):
 
         self.assertTrueRules([
             'rule test { condition: filesize == %d }' % len(PE32_FILE),
         ], PE32_FILE)
+
+    def testTooManyArguments(self):
+
+        self.assertRaises(TypeError, yara.compile, 'rules1.yar', 'rules2.yar')
 
     def testCompileFile(self):
 
@@ -876,11 +959,11 @@ class TestYara(unittest.TestCase):
         if sys.version_info[0] >= 3:
             self.assertTrue(yara.compile(
                 source="rule test { condition: true}",
-                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' }))
+                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1'}))
         else:
             self.assertRaises(UnicodeEncodeError, yara.compile,
                 source="rule test { condition: true}",
-                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1' })
+                externals={'foo': u'\u6765\u6613\u7f51\u7edc\u79d1'})
 
     def testCallbackAll(self):
         global rule_data
@@ -890,7 +973,6 @@ class TestYara(unittest.TestCase):
             global rule_data
             rule_data.append(data)
             return yara.CALLBACK_CONTINUE
-
 
         r = yara.compile(source='rule t { condition: true } rule f { condition: false }')
         r.match(data='dummy', callback=callback, which_callbacks=yara.CALLBACK_ALL)
@@ -937,6 +1019,19 @@ class TestYara(unittest.TestCase):
         r = yara.compile(source='include "foo" rule r { condition: included }', include_callback=callback)
         self.assertTrue(r.match(data='dummy'))
 
+    def testConsoleCallback(self):
+        global called
+        called = False
+
+        def callback(message):
+            global called
+            called = True
+            return yara.CALLBACK_CONTINUE
+
+        r = yara.compile(source='import "console" rule r { condition: console.log("AXSERS") }')
+        r.match(data='dummy', console_callback=callback)
+        self.assertTrue(called)
+
     def testCompare(self):
 
         r = yara.compile(sources={
@@ -949,10 +1044,10 @@ class TestYara(unittest.TestCase):
         self.assertTrue(len(m) == 2)
 
         if sys.version_info[0] < 3:
-          self.assertTrue(m[0] < m[1])
-          self.assertTrue(m[0] != m[1])
-          self.assertFalse(m[0] > m[1])
-          self.assertFalse(m[0] == m[1])
+            self.assertTrue(m[0] < m[1])
+            self.assertTrue(m[0] != m[1])
+            self.assertFalse(m[0] > m[1])
+            self.assertFalse(m[0] == m[1])
 
     def testComments(self):
 
@@ -990,13 +1085,13 @@ class TestYara(unittest.TestCase):
             'import "tests" rule test { condition: tests.fsum(1.0,2.0) == 3.0}',
             'import "tests" rule test { condition: tests.fsum(1.0,2.0,3.0) == 6.0}',
             'import "tests" rule test { condition: tests.length("dummy") == 5}',
-          ])
+        ])
 
         self.assertFalseRules([
             'import "tests" rule test { condition: tests.struct_array[0].i == 1 }',
             'import "tests" rule test { condition: tests.isum(1,1) == 3}',
             'import "tests" rule test { condition: tests.fsum(1.0,1.0) == 3.0}',
-          ])
+        ])
 
     def testIntegerFunctions(self):
 
@@ -1007,7 +1102,7 @@ class TestYara(unittest.TestCase):
             'rule test { condition: uint8be(0) == 0xAA}',
             'rule test { condition: uint16be(0) == 0xAABB}',
             'rule test { condition: uint32be(0) == 0xAABBCCDD}',
-          ], b'\xAA\xBB\xCC\xDD')
+        ], b'\xAA\xBB\xCC\xDD')
 
     def testStringIO(self):
 
@@ -1040,11 +1135,11 @@ class TestYara(unittest.TestCase):
         r1.match(data='', modules_callback=callback)
 
         if sys.version_info[0] >= 3:
-          self.assertTrue(data['constants']['foo'] == bytes('foo', 'utf-8'))
-          self.assertTrue(data['constants']['empty'] == bytes('', 'utf-8'))
+            self.assertTrue(data['constants']['foo'] == bytes('foo', 'utf-8'))
+            self.assertTrue(data['constants']['empty'] == bytes('', 'utf-8'))
         else:
-          self.assertTrue(data['constants']['foo'] == 'foo')
-          self.assertTrue(data['constants']['empty'] == '')
+            self.assertTrue(data['constants']['foo'] == 'foo')
+            self.assertTrue(data['constants']['empty'] == '')
 
         self.assertTrue(data['constants']['one'] == 1)
         self.assertTrue(data['constants']['two'] == 2)
@@ -1059,7 +1154,7 @@ class TestYara(unittest.TestCase):
             ''')
 
         for i, r in enumerate(rules, start=1):
-           self.assertTrue(r.identifier == 'test%d' % i)
+            self.assertTrue(r.identifier == 'test%d' % i)
 
         it = iter(rules)
         r = next(it)
@@ -1099,14 +1194,48 @@ class TestYara(unittest.TestCase):
         self.assertTrue(r.match(data=data))
 
     def testWarningCallback(self):
-        global warnings_callback_called
+        global warnings_callback_called, warnings_callback_message
 
         warnings_callback_called = False
-        r = yara.compile(source='rule x { strings: $x = "X" condition: $x }')
+        warnings_callback_message = None
+
+        r = yara.compile(sources={'ns1': 'rule x { strings: $x = "X" condition: $x }'})
         data = memoryview(b"X" * 1000099)
         r.match(data=data, warnings_callback=warnings_callback)
 
-        self.assertTrue(warnings_callback_called, yara.CALLBACK_TOO_MANY_MATCHES)
+        self.assertTrue(warnings_callback_called == yara.CALLBACK_TOO_MANY_MATCHES)
+
+        self.assertTrue(warnings_callback_message == ("ns1", "x", "$x"))
+
+        self.assertTrue(warnings_callback_message.namespace == "ns1")
+        self.assertTrue(warnings_callback_message.rule == "x")
+        self.assertTrue(warnings_callback_message.string == "$x")
+
+    def testCompilerErrorOnWarning(self):
+        # Make sure we always throw on warnings if requested, and that warnings
+        # are accumulated.
+
+        rules = """
+        rule a { strings: $a = "A" condition: $a }
+        rule b { strings: $b = "B" condition: $b }
+        """
+
+        expected = [
+            'line 2: string "$a" may slow down scanning',
+            'line 3: string "$b" may slow down scanning',
+        ]
+
+        with self.assertRaises(yara.WarningError) as ctx:
+            yara.compile(source=rules, error_on_warning=True)
+
+        e = ctx.exception
+        self.assertListEqual(e.warnings, expected)
+
+        # Now make sure the warnings member is set if error_on_warning is not
+        # set.
+        rules = yara.compile(source=rules)
+        self.assertListEqual(rules.warnings, expected)
+
 
 if __name__ == "__main__":
     unittest.main()
